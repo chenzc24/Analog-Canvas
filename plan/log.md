@@ -4860,3 +4860,17 @@ Keep reusable lessons in `docs/experience/`, not in this log.
   smoke, and all 205 browser tests.
 - Commit status: stacked review branch prepared for required remote checks and
   one PR merge to `main`.
+
+## 2026-08-23 - Separate project properties from selection
+
+- Target: `plan/2026-08-23-properties-project-split/plan.md` (completed).
+- Changed areas: split Properties into Selection and Project views; moved
+  Placement Tray and live Issues into Project; simplified issue filters to
+  severity only; compacted identity, primitive target, parameter, capacitor,
+  and direct wire-action presentation without changing the MOS Bulk section.
+- Validation: preflight; affected unit suite (183 files / 1185 tests);
+  component-insert Playwright (24), hierarchy Playwright (12), manual-editor
+  Playwright (98); workspace build; isolated local-browser view check; diff
+  checks.
+- Commit status: committed locally as `da6e15d2` on
+  `codex/properties-project-split`; pending push and remote required checks.

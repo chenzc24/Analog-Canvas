@@ -104,7 +104,7 @@ describe("selection inspector details", () => {
     expect(markup).not.toContain("CROWDED_LABEL");
   });
 
-  it("renders revision-stamped actionable findings and hides observations by default", () => {
+  it("renders every current finding and filters only by severity", () => {
     const visualDiagnostic: Diagnostic = {
       ...ercDiagnostic,
       id: "visual:fixture",
@@ -133,10 +133,9 @@ describe("selection inspector details", () => {
     expect(markup).toContain('data-document-id="document-child"');
     expect(markup).toContain("Cell: Bias Child Cell");
     expect(markup).toContain("ERC / ERC_UNCONNECTED_PIN");
-    expect(markup).not.toContain("VISUAL / VISUAL_SHORT_SEGMENT");
-    expect(markup).toContain('data-testid="diagnostic-observations-toggle"');
-    expect(markup).toContain("Show non-blocking observations (1)");
-    expect(markup).toContain("Issues (1)");
+    expect(markup).toContain("VISUAL / VISUAL_SHORT_SEGMENT");
+    expect(markup).not.toContain("diagnostic-observations-toggle");
+    expect(markup).toContain("Issues (2)");
   });
 
   it("renders concrete, navigable hierarchy Net hops", () => {

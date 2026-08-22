@@ -813,7 +813,7 @@ test("adds and straightens an explicit jog on the selected wire segment", async 
     "Added orthogonal wire jog",
   );
   expect((await readRoutePoints(page, routeId)).length).toBe(before.length + 2);
-  await page.getByRole("button", { name: "Straighten selected jog" }).click();
+  await page.getByRole("button", { name: "Straighten jog" }).click();
   await expect(page.getByTestId("status")).toContainText(
     "Straightened orthogonal wire jog",
   );
@@ -1834,18 +1834,15 @@ test("Properties toggles reference label visibility for one or many components",
   await page.getByTestId("hit-R1").click();
   await openSelectionShelf(page);
   const properties = page.getByRole("complementary", { name: "Properties" });
-  for (const sectionName of [
-    "Identity",
-    "Netlist target",
-    "Parameters",
-    "Display",
-    "Advanced parameters",
-    "Placement",
-  ]) {
+  for (const sectionName of ["Parameters", "Display", "Placement"]) {
     await expect(
       properties.getByText(sectionName, { exact: true }),
     ).toBeVisible();
   }
+  await expect(page.getByLabel("Component identity")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Placement Tray" }),
+  ).toBeHidden();
   const singleToggle = page.getByRole("checkbox", {
     name: "Reference",
     exact: true,
@@ -2839,6 +2836,8 @@ R7 IN OUT 10k
   await expect(page.getByTestId("status")).toContainText(
     "Imported 1 Documents",
   );
+  await openSelectionShelf(page);
+  await page.getByTestId("properties-view-project").click();
   await page
     .getByRole("region", { name: "Placement Tray" })
     .getByRole("button", { name: "Place all" })
@@ -3506,6 +3505,7 @@ test("surfaces and locates current-document ERC diagnostics", async ({
   await page.goto("/editor");
   await placeComponent(page, "resistor", { x: 380, y: 260 });
   await openSelectionShelf(page);
+  await page.getByTestId("properties-view-project").click();
   await page
     .getByRole("region", { name: "Project diagnostics" })
     .locator("summary")
@@ -3536,6 +3536,7 @@ test("removes resolved live diagnostics and restores them through undo", async (
   await page.goto("/editor");
   await placeComponent(page, "resistor", { x: 380, y: 260 });
   await openSelectionShelf(page);
+  await page.getByTestId("properties-view-project").click();
   await page
     .getByRole("region", { name: "Project diagnostics" })
     .locator("summary")
@@ -3547,6 +3548,7 @@ test("removes resolved live diagnostics and restores them through undo", async (
     await page.getByTestId(`terminal-R1-${pinName}`).click({ button: "right" });
     await page.getByRole("button", { name: "Mark No Connect" }).click();
   }
+  await page.getByTestId("properties-view-project").click();
   await expect(diagnostics).not.toContainText("ERC_UNCONNECTED_PIN");
   await expect(page.getByTestId("no-current-diagnostics")).toBeVisible();
 
@@ -3564,12 +3566,12 @@ test("filters and navigates locator-backed visual diagnostics", async ({
   await placeComponent(page, "resistor", { x: 420, y: 300 });
   await placeComponent(page, "resistor", { x: 420, y: 300 });
   await openSelectionShelf(page);
+  await page.getByTestId("properties-view-project").click();
   await page
     .getByRole("region", { name: "Project diagnostics" })
     .locator("summary")
     .click();
 
-  await page.getByTestId("diagnostic-observations-toggle").click();
   const diagnostics = page.getByTestId("project-diagnostics");
   await expect(diagnostics).toContainText("VISUAL_SYMBOL_OVERLAP");
   await diagnostics

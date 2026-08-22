@@ -109,11 +109,18 @@ test("returns a component to the Placement Tray and places the retained Instance
   await canvas.click({ position: { x: 320, y: 220 } });
   await page.keyboard.press("Escape");
   await page.getByTestId("hit-R1").click();
-  await page.getByTestId("selection-shelf").click();
+  const shelf = page.getByTestId("selection-shelf");
+  if ((await shelf.getAttribute("aria-expanded")) === "false") {
+    await shelf.click();
+  }
 
   await page
     .getByRole("button", { name: "Return component to Placement Tray" })
     .click();
+  await expect(
+    page.getByRole("region", { name: "Placement Tray" }),
+  ).toBeHidden();
+  await page.getByTestId("properties-view-project").click();
   await expect(
     page.getByRole("region", { name: "Placement Tray" }),
   ).toContainText("1 retained");
@@ -134,15 +141,18 @@ test("returns a component to the Placement Tray and places the retained Instance
   await expect(
     page.getByTestId("annotation-hit-instance-label-R1"),
   ).toBeVisible();
+  await page.getByTestId("properties-view-project").click();
   await expect(
     page.getByRole("region", { name: "Placement Tray" }),
   ).toContainText("0 retained");
   await expect(page.getByTestId("revision")).toHaveText("3");
 
   await page.getByTestId("hit-R1").click();
+  await page.getByTestId("properties-view-selection").click();
   await page
     .getByRole("button", { name: "Return component to Placement Tray" })
     .click();
+  await page.getByTestId("properties-view-project").click();
   await page
     .getByRole("region", { name: "Placement Tray" })
     .getByRole("button", { name: "Place all" })
@@ -578,7 +588,7 @@ test("carries a manual Value through placement and Q property editing", async ({
     page.getByRole("button", { name: "Discard changes" }),
   ).toHaveCount(0);
   await expect(page.getByLabel("Component identity")).toContainText(
-    "Schematic labelNetlist referenceSymbolresistorDevice classresistor",
+    "Schematic labelNetlist referenceSymbol details",
   );
   const netlistReference = page.getByLabel("Component netlist reference");
   await expect(netlistReference).toHaveValue("R1");
@@ -591,11 +601,7 @@ test("carries a manual Value through placement and Q property editing", async ({
   await schematicLabel.fill("Input resistor");
   await schematicLabel.press("Tab");
   await expect(page.getByTestId("revision")).toHaveText("5");
-  await page
-    .locator("summary")
-    .filter({ hasText: "Advanced parameters" })
-    .click();
-  await page.getByRole("button", { name: "Add parameter" }).click();
+  await page.getByRole("button", { name: "Add advanced parameter" }).click();
   await page.getByLabel("Additional parameter name 1").fill("tc");
   await page.getByLabel("Additional parameter value 1").fill("0.1");
   await page.getByRole("button", { name: "Apply parameters" }).click();

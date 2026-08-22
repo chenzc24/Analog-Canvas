@@ -1,7 +1,4 @@
-import {
-  diagnosticPresentationGroup,
-  hasBlockingVisualDiagnostics,
-} from "@icm/derived";
+import { hasBlockingVisualDiagnostics } from "@icm/derived";
 import type {
   Diagnostic,
   DiagnosticSeverity,
@@ -11,7 +8,7 @@ import type {
   LiveDiagnosticSnapshot,
   VisualDiagnostic,
 } from "@icm/derived";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { SpiceDiagnostic } from "@icm/spice";
 
 import type { EditorTool } from "../../interaction/interaction-state";
@@ -246,62 +243,31 @@ export function ProjectDiagnosticsSection({
   const diagnostics = snapshot.diagnostics;
   const [severityFilter, setSeverityFilter] =
     useState<DiagnosticSeverityFilter>("all");
-  const [showObservations, setShowObservations] = useState(false);
-  const observationCount = diagnostics.filter(
-    (diagnostic) => diagnosticPresentationGroup(diagnostic) === "observation",
-  ).length;
-  const availableDiagnostics = useMemo(
-    () =>
-      showObservations
-        ? diagnostics
-        : diagnostics.filter(
-            (diagnostic) =>
-              diagnosticPresentationGroup(diagnostic) === "actionable",
-          ),
-    [diagnostics, showObservations],
+  const visibleDiagnostics = diagnostics.filter(
+    (diagnostic) =>
+      severityFilter === "all" || diagnostic.severity === severityFilter,
   );
-  const visibleDiagnostics = useMemo(
-    () =>
-      availableDiagnostics.filter(
-        (diagnostic) =>
-          severityFilter === "all" || diagnostic.severity === severityFilter,
-      ),
-    [availableDiagnostics, severityFilter],
-  );
-  const hasBlockingIssue = availableDiagnostics.some(
+  const hasBlockingIssue = diagnostics.some(
     (diagnostic) => diagnostic.severity === "error",
   );
   return (
     <section
       aria-label="Project diagnostics"
-      className="diagnostics erc-diagnostics"
+      className="diagnostics erc-diagnostics project-diagnostics"
     >
       <details open={hasBlockingIssue || undefined}>
         <summary>
-          <h2>Issues ({availableDiagnostics.length})</h2>
+          <h2>Issues ({diagnostics.length})</h2>
           <span>{hasBlockingIssue ? "Action required" : "Review"}</span>
         </summary>
         <div className="diagnostics-body">
-          {observationCount > 0 ? (
-            <button
-              type="button"
-              data-testid="diagnostic-observations-toggle"
-              aria-pressed={showObservations}
-              onClick={() => setShowObservations((current) => !current)}
-            >
-              {showObservations ? "Hide" : "Show"} non-blocking observations (
-              {observationCount})
-            </button>
-          ) : null}
           <DiagnosticFilters
-            diagnostics={availableDiagnostics}
+            diagnostics={diagnostics}
             severityFilter={severityFilter}
             onSeverityFilterChange={setSeverityFilter}
           />
-          {availableDiagnostics.length === 0 ? (
-            <p data-testid="no-current-diagnostics">
-              No current actionable diagnostics
-            </p>
+          {diagnostics.length === 0 ? (
+            <p data-testid="no-current-diagnostics">No current diagnostics</p>
           ) : visibleDiagnostics.length === 0 ? (
             <p data-testid="no-matching-diagnostics">
               No diagnostics match the current filters
@@ -315,7 +281,6 @@ export function ProjectDiagnosticsSection({
                 data-document-id={diagnostic.primary.documentId}
                 data-severity={diagnostic.severity}
                 data-confidence={diagnostic.confidence}
-                data-presentation={diagnosticPresentationGroup(diagnostic)}
               >
                 <button
                   type="button"

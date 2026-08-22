@@ -542,6 +542,9 @@ export function App({
     aboutButtonRef,
     aboutCloseRef,
   });
+  const [propertiesView, setPropertiesView] = useState<"selection" | "project">(
+    "selection",
+  );
   const [restoreAfterRefresh] = useState(() => {
     if (typeof window === "undefined") return false;
     const requested =
@@ -1262,6 +1265,16 @@ export function App({
     selectedDrafting ||
     selectedEndpoint,
   );
+  useEffect(() => {
+    if (hasInspectableSelection) setPropertiesView("selection");
+  }, [
+    hasInspectableSelection,
+    selectedAnnotationId,
+    selectedDraftingId,
+    selectedEndpoint,
+    selectedInstance?.id,
+    selectedRouteId,
+  ]);
   const selectionShelfSummary = selectedInstance
     ? `${selectedInstance.id} · ${selectedInstance.symbolId}`
     : selectedIds.length > 1
@@ -1502,6 +1515,44 @@ export function App({
         return [{ route, geometry }];
       }),
     [document, projectConnectivityIndex],
+  );
+  const selectedRouteGeometryRecord = selectedRouteId
+    ? routeGeometryRecords.find((record) => record.route.id === selectedRouteId)
+    : undefined;
+  const selectedRouteSegmentForActions = selectedRoute
+    ? Math.min(
+        selectedRouteSegmentIndex ?? 0,
+        selectedRoute.segmentModes.length - 1,
+      )
+    : 0;
+  const selectedRouteSegmentModes = selectedRoute
+    ? selectedRoute.segmentModes.slice(
+        selectedRouteSegmentForActions - 1,
+        selectedRouteSegmentForActions + 2,
+      )
+    : [];
+  const selectedRouteCanInsertJog = Boolean(
+    selectedRoute &&
+    selectedRouteGeometryRecord &&
+    !["locked", "trunk"].includes(
+      selectedRoute.segmentModes[selectedRouteSegmentForActions] ?? "locked",
+    ),
+  );
+  const selectedRouteCanStraightenJog = Boolean(
+    selectedRouteGeometryRecord &&
+    selectedRouteSegmentForActions > 0 &&
+    selectedRouteSegmentForActions <
+      selectedRouteGeometryRecord.geometry.centerline.length - 2 &&
+    selectedRouteSegmentModes.length === 3 &&
+    selectedRouteSegmentModes.every(
+      (mode) => mode !== "locked" && mode !== "trunk",
+    ) &&
+    (() => {
+      const points = selectedRouteGeometryRecord.geometry.centerline;
+      const from = points[selectedRouteSegmentForActions - 1];
+      const to = points[selectedRouteSegmentForActions + 2];
+      return Boolean(from && to && (from.x === to.x || from.y === to.y));
+    })(),
   );
   const contactComponents = useMemo(
     () =>
@@ -1888,6 +1939,7 @@ export function App({
 
   function openProperties(): void {
     setImportReviewOpen(false);
+    setPropertiesView("selection");
     setSelectionOpen(true);
     // Focus the header, not the first field: Q stays a pure toggle and
     // editing starts only when the user clicks an input.
@@ -1900,6 +1952,7 @@ export function App({
     setSelectedEndpoint(null);
     updateInstanceSelection(instanceId, false);
     setImportReviewOpen(false);
+    setPropertiesView("selection");
     setSelectionOpen(true);
     setStatus(`Properties for ${instanceId}`);
     requestAnimationFrame(() => {
@@ -8065,7 +8118,34 @@ export function App({
                 ) : null}
               </span>
             </button>
-            <div className="selection-panel" hidden={!selectionOpen}>
+            <div
+              className={`selection-panel ${propertiesView}-properties-view`}
+              hidden={!selectionOpen}
+            >
+              <div
+                className="properties-view-switch"
+                role="tablist"
+                aria-label="Properties view"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={propertiesView === "selection"}
+                  data-testid="properties-view-selection"
+                  onClick={() => setPropertiesView("selection")}
+                >
+                  Selection
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={propertiesView === "project"}
+                  data-testid="properties-view-project"
+                  onClick={() => setPropertiesView("project")}
+                >
+                  Project
+                </button>
+              </div>
               {selectedInstance && selectedBulkResolution ? (
                 <section
                   className="context-actions"
@@ -8380,10 +8460,9 @@ export function App({
                     </div>
                   ) : null}
                   <div
-                    className="property-card property-identity-card"
+                    className="property-identity-row"
                     aria-label="Component identity"
                   >
-                    <div className="property-section-heading">Identity</div>
                     <dl className="component-readonly-fields">
                       {selectedPortNet && !selectedFormalTerminal ? (
                         <div>
@@ -8441,19 +8520,26 @@ export function App({
                           </dd>
                         </div>
                       ) : null}
-                      <div>
-                        <dt>Symbol</dt>
-                        <dd>{selectedInstance.symbolId}</dd>
-                      </div>
-                      <div>
-                        <dt>Device class</dt>
-                        <dd>{selectedPropertyDevice?.deviceClass ?? "none"}</dd>
-                      </div>
-                      <div>
-                        <dt>Cell</dt>
-                        <dd>{document.netlist?.name ?? document.name}</dd>
-                      </div>
                     </dl>
+                    <details className="property-inline-details">
+                      <summary>Symbol details</summary>
+                      <dl className="component-readonly-fields">
+                        <div>
+                          <dt>Symbol</dt>
+                          <dd>{selectedInstance.symbolId}</dd>
+                        </div>
+                        <div>
+                          <dt>Device class</dt>
+                          <dd>
+                            {selectedPropertyDevice?.deviceClass ?? "none"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Cell</dt>
+                          <dd>{document.netlist?.name ?? document.name}</dd>
+                        </div>
+                      </dl>
+                    </details>
                   </div>
                   {selectedCapacitorPlateRows ? (
                     <div
@@ -8482,7 +8568,8 @@ export function App({
                       </small>
                     </div>
                   ) : null}
-                  {selectedInstance.netlist ? (
+                  {selectedInstance.netlist &&
+                  selectedInstance.netlist.binding?.kind !== "primitive" ? (
                     <div
                       className="property-card property-target-card"
                       aria-label="Netlist target"
@@ -8535,12 +8622,6 @@ export function App({
                           ) : null}
                         </label>
                       ) : selectedInstance.netlist.binding?.kind ===
-                        "primitive" ? (
-                        <small>
-                          Built-in primitive:{" "}
-                          {selectedInstance.netlist.binding.deviceClass}
-                        </small>
-                      ) : selectedInstance.netlist.binding?.kind ===
                         "subcircuit" ? (
                         <small>
                           Internal Cell:{" "}
@@ -8571,8 +8652,7 @@ export function App({
                           <label key={parameter.key} title={parameter.help}>
                             <span className="property-parameter-name">
                               {parameter.label}
-                              {parameter.unit ? ` / ${parameter.unit}` : ""}
-                              <em>({parameter.help})</em>
+                              {parameter.unit ? ` (${parameter.unit})` : ""}
                             </span>
                             <input
                               ref={
@@ -8601,6 +8681,16 @@ export function App({
                         ),
                       )}
                     </div>
+                    {selectedInstance.netlist &&
+                    additionalParameterDraft.length === 0 ? (
+                      <button
+                        type="button"
+                        className="property-additional-parameter"
+                        onClick={addAdditionalParameter}
+                      >
+                        Add advanced parameter
+                      </button>
+                    ) : null}
                   </div>
                   <div className="property-card property-display-card">
                     <div className="property-section-heading">Display</div>
@@ -8648,8 +8738,12 @@ export function App({
                       />
                     </div>
                   </div>
-                  {selectedInstance.netlist ? (
-                    <details className="property-details">
+                  {selectedInstance.netlist &&
+                  additionalParameterDraft.length > 0 ? (
+                    <details
+                      className="property-details"
+                      open={additionalParameterDraftChanges || undefined}
+                    >
                       <summary>
                         <span>Advanced parameters</span>
                         <small>{additionalParameterDraft.length}</small>
@@ -9247,32 +9341,47 @@ export function App({
                       }
                     />
                   </label>
-                  <button type="button" onClick={deleteSelectedRouteNetLabel}>
-                    Delete Net label
-                  </button>
-                  <button type="button" onClick={addCurrentArrow}>
-                    Add current arrow
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => editSelectedRouteJog("insert")}
-                  >
-                    Add wire jog
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => editSelectedRouteJog("remove")}
-                  >
-                    Straighten selected jog
-                  </button>
-                  <button type="button" onClick={toggleHighlightedNet}>
-                    {selectedHighlightIsActive
-                      ? "Clear Net highlight (H)"
-                      : "Highlight Net (H)"}
-                  </button>
-                  <button type="button" onClick={deleteSelectedRouteConnection}>
-                    Delete wire
-                  </button>
+                  <div className="route-action-grid">
+                    <button type="button" onClick={addCurrentArrow}>
+                      Add current arrow
+                    </button>
+                    {selectedRouteCanStraightenJog ? (
+                      <button
+                        type="button"
+                        onClick={() => editSelectedRouteJog("remove")}
+                      >
+                        Straighten jog
+                      </button>
+                    ) : selectedRouteCanInsertJog ? (
+                      <button
+                        type="button"
+                        onClick={() => editSelectedRouteJog("insert")}
+                      >
+                        Add wire jog
+                      </button>
+                    ) : null}
+                    <button type="button" onClick={toggleHighlightedNet}>
+                      {selectedHighlightIsActive
+                        ? "Clear Net highlight (H)"
+                        : "Highlight Net (H)"}
+                    </button>
+                    {selectedRouteNetLabel ? (
+                      <button
+                        type="button"
+                        className="route-action-secondary"
+                        onClick={deleteSelectedRouteNetLabel}
+                      >
+                        Delete Net label
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="route-action-delete"
+                      onClick={deleteSelectedRouteConnection}
+                    >
+                      Delete wire
+                    </button>
+                  </div>
                 </section>
               ) : null}
               {selectedEndpoint &&
@@ -9363,7 +9472,9 @@ export function App({
                 }
                 onSelectDiagnostic={jumpToProjectDiagnostic}
               />
-              {highlightedTrace && highlightedTrace.hops.length > 0 ? (
+              {propertiesView === "selection" &&
+              highlightedTrace &&
+              highlightedTrace.hops.length > 0 ? (
                 <NetTraceSection
                   trace={highlightedTrace}
                   documentLabel={(documentId) =>

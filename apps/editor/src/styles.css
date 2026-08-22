@@ -2529,6 +2529,43 @@ body {
   background: color-mix(in srgb, var(--icm-accent) 12%, transparent);
 }
 
+.properties-view-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--icm-border);
+  border-radius: var(--icm-radius-sm);
+  background: var(--icm-surface-muted);
+}
+
+.properties-view-switch button {
+  min-height: 1.8rem;
+  padding: 0.2rem 0.45rem;
+  border: 0;
+  border-radius: calc(var(--icm-radius-sm) - 1px);
+  color: var(--icm-text-muted);
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--icm-font-sm);
+}
+
+.properties-view-switch button[aria-selected="true"] {
+  color: var(--icm-text);
+  background: var(--icm-surface);
+  box-shadow: var(--icm-shadow-sm);
+}
+
+.selection-panel.selection-properties-view > .placement-tray,
+.selection-panel.selection-properties-view > .project-diagnostics {
+  display: none;
+}
+
+.selection-panel.project-properties-view
+  > :not(.properties-view-switch, .placement-tray, .project-diagnostics) {
+  display: none;
+}
+
 .placement-tray {
   display: grid;
   gap: 0.5rem;
@@ -2571,6 +2608,27 @@ body {
 .placement-tray-entry button:last-child {
   width: auto;
   white-space: nowrap;
+}
+
+.route-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.context-actions .route-action-grid button {
+  width: auto;
+  margin-top: 0;
+}
+
+.route-action-grid .route-action-delete {
+  grid-column: 1 / -1;
+  color: var(--icm-danger);
+}
+
+.route-action-grid .route-action-secondary {
+  color: var(--icm-text-muted);
 }
 
 .context-actions label,
@@ -2622,6 +2680,29 @@ body {
   background: var(--icm-surface-muted);
 }
 
+.property-identity-row {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.property-inline-details {
+  min-width: 0;
+}
+
+.property-inline-details summary {
+  color: var(--icm-text-muted);
+  cursor: pointer;
+  font-size: var(--icm-font-xs);
+}
+
+.property-inline-details[open] {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--icm-border);
+}
+
 .property-card > small,
 .additional-parameters > small {
   color: var(--icm-text-muted);
@@ -2632,6 +2713,22 @@ body {
 .component-parameter-grid {
   display: grid;
   gap: 0.45rem;
+}
+
+.property-additional-parameter {
+  justify-self: start;
+  margin: 0.05rem 0 0;
+  padding: 0;
+  border: 0;
+  color: var(--icm-text-muted);
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--icm-font-xs);
+}
+
+.property-additional-parameter:hover:not(:disabled) {
+  color: var(--icm-text);
+  background: transparent;
 }
 
 .property-display-card .display-toggle-row {
@@ -2752,6 +2849,15 @@ body {
   font-size: var(--icm-font-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.property-terminal-card {
+  gap: 0.35rem;
+  padding-block: 0.5rem;
+}
+
+.property-terminal-card > small {
+  font-size: 0.7rem;
 }
 
 .cell-symbol-layout-properties {

@@ -467,6 +467,7 @@ test("returns a formal Cell Port to the Tray without deleting its interface", as
   );
   await expect(page.getByTestId("unplaced-P1")).toContainText("Vout · port");
   await expect(page.getByTestId("hit-P1")).toHaveCount(0);
+  await page.getByTestId("properties-view-project").click();
   await page
     .getByRole("region", { name: "Placement Tray" })
     .getByRole("button", { name: "Place all" })
